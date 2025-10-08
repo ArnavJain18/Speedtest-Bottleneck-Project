@@ -17,7 +17,7 @@ mkdir -p "$workdir"
 
 # --- Step 1: Run bottleneck tester and save output ---
 echo "[INFO] Running bottleneck-finder..."
-netrics-bottleneck-finder > "$outfile"
+/home/raspi/speedtest_diagnostics/bin/netrics-bottleneck-finder > "$outfile"
 
 # --- Step 2: Extract files ---
 echo "[INFO] Extracting files..."
