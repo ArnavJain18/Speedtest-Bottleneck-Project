@@ -6,7 +6,7 @@ set -u  # treat unset variables as error
 MASTER_USER="baadalvm"
 MASTER_HOST="10.17.9.73"
 MASTER_PASS="5855bfd1"   # TODO: use SSH key later
-REMOTE_DIR="/home/baadalvm/netrics_results_raspberrypi"
+REMOTE_DIR="__REMOTE_DIR__"
 
 # --- Temporary workspace ---
 timestamp=$(date +"%Y%m%d_%H%M%S")
