@@ -1,5 +1,5 @@
 #!/bin/bash
-# Usage: sudo ./install.sh [raspi_name] [master_ip] [master_home]
+# Usage: sudo ./install.sh <raspi_name> [master_ip] [master_home]
 if [ "$EUID" -ne 0 ]; then
   echo "Please run this script as root:"
   echo "  sudo ./install.sh <raspi_name> [master_ip] [master_home]"
