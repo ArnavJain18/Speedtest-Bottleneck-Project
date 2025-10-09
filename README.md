@@ -13,7 +13,6 @@ This README explains how to prepare a Raspberry Pi (headless or with the built-i
 curl -L -o install.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/install.sh
 ```
 
----
 
 ## Table of contents
 
@@ -28,7 +27,6 @@ curl -L -o install.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bo
 * [Troubleshooting & notes](#troubleshooting--notes)
 * [License & contact](#license--contact)
 
----
 
 ## Requirements
 
@@ -37,7 +35,6 @@ curl -L -o install.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bo
 * A Salt master reachable at `10.17.9.73` by default (see usage below to change)
 * Internet access to download packages and tools
 
----
 
 ## 1) Flash OS & connect to Wi‑Fi
 
@@ -47,7 +44,6 @@ curl -L -o install.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bo
 
 > If you plan to use SSH-only (headless), enable SSH before first boot by creating an empty file named `ssh` on the boot partition or enable it later from the UI / `raspi-config`.
 
----
 
 ## 2) Open a terminal (local or SSH)
 
@@ -64,7 +60,6 @@ Also, while you are here, set a secure password for the `pi`/`raspi` user via th
 passwd
 ```
 
----
 
 ## 3) Download & make the installer executable
 
@@ -75,7 +70,6 @@ curl -L -o install.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bo
 chmod +x install.sh
 ```
 
----
 
 ## 4) Run the installer (usage)
 
@@ -101,7 +95,6 @@ sudo ./install.sh raspi-room2 10.17.9.73 /home/baadalvm
 
 **Important:** Run with `sudo` exactly as shown. The script expects elevated privileges and will fail or behave incorrectly if not run as root.
 
----
 
 ## 5) Accept the Salt key on the master
 
@@ -120,7 +113,6 @@ sudo salt-key -A
 
 Verify the minion shows up under `Accepted` after acceptance.
 
----
 
 ## What the installer script does (summary)
 
@@ -135,7 +127,6 @@ The installer performs the following high-level tasks:
 * Configures the system to automatically schedule and run the test tools at regular intervals
 * Sets up a service that detects new pcap/json results and uploads them to the master automatically
 
----
 
 ## Post‑install checks
 
@@ -159,7 +150,6 @@ sudo salt-key -L
 sudo salt '<minion_id>' test.ping
 ```
 
----
 
 ## Troubleshooting & notes
 
