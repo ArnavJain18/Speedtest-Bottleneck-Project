@@ -25,7 +25,6 @@ curl -L -o install.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bo
 * [What the script does](#what-the-script-does)
 * [Post‑install checks](#post‑install-checks)
 * [Troubleshooting & notes](#troubleshooting--notes)
-* [License & contact](#license--contact)
 
 
 ## Requirements
