@@ -123,7 +123,7 @@ The installer performs the following high-level tasks:
 * Installs required tools and libraries for the project, including:
 
   * Go (golang)
-  * `netrics` and/or the speedtest bottleneck tool (project binaries)
+  * `netrics` and the speedtest bottleneck tool (project binaries)
 * Configures the system to automatically schedule and run the test tools at regular intervals
 * Sets up a service that detects new pcap/json results and uploads them to the master automatically
 
