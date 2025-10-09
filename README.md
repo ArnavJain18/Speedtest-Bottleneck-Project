@@ -4,7 +4,6 @@ This README explains how to prepare a Raspberry Pi (headless or with the built-i
 
 > **IMPORTANT:** Always run the installer **exactly** as shown below (with `sudo`). The `raspi_name` argument must be **unique** across all your Raspberry Pis. If two Pis use the same name, data on the master can be lost and SaltStack may become corrupted.
 
----
 
 ## Quick links
 
