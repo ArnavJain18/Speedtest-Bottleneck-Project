@@ -33,8 +33,6 @@ DEBIAN_FRONTEND=noninteractive sudo apt install -y \
 
 echo "master: $MASTER_IP" | tee -a /etc/salt/minion > /dev/null
 echo "id: $RASPI_NAME" | tee -a /etc/salt/minion > /dev/null
-sudo systemctl restart salt-minion
-sudo systemctl enable salt-minion
 
 echo "========================= Updating and installing dependencies...========================================================="
 sudo apt update
@@ -87,9 +85,12 @@ curl -sL https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Proj
 
 chmod +x netrics_wrapper.sh
 curl -O https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/measurements.yaml
-mv measurements.yaml ~/.config/netrics/
-systemctl --user daemon-reload
-systemctl --user restart netrics
+mv measurements.yaml /etc/netrics/
+sudo systemctl daemon-reload
+sudo systemctl restart netrics
+
+sudo systemctl restart salt-minion
+sudo systemctl enable salt-minion
 
 
 
