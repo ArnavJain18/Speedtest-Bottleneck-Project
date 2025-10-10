@@ -98,7 +98,7 @@ sudo ./install.sh raspi-room1
 sudo ./install.sh raspi-room2 10.17.9.73 /home/baadalvm
 ```
 
-**Important:** Run with `sudo` exactly as shown. The script expects elevated privileges and will fail or behave incorrectly if not run as root.
+**Important:** Run with `sudo` exactly as shown. The script expects elevated privileges and will fail or behave incorrectly if not run as root. Also you might be asked to enter Y/N during the installation process, simply proceed by pressing Y.
 
 
 ## 5) Accept the Salt key on the master
