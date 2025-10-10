@@ -89,6 +89,7 @@ mv measurements.yaml /etc/netrics/
 sudo systemctl daemon-reload
 sudo systemctl restart netrics
 
+echo "========================= Restarting salt-minion service...========================================================="
 sudo systemctl restart salt-minion
 sudo systemctl enable salt-minion
 
