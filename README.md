@@ -101,9 +101,16 @@ sudo ./install.sh raspi-room2 10.17.9.73 /home/baadalvm
 **Important:** Run with `sudo` exactly as shown. The script expects elevated privileges and will fail or behave incorrectly if not run as root. Also you might be asked to enter Y/N during the installation process, simply proceed by pressing Y.
 
 
-## 5) Accept the Salt key on the master
+## 5) Restart Salt Minion and Accept the Salt key on the master
 
-After the minion runs the installer it will register with the Salt master and present its key. On the Salt master run:
+Once the script is finished, run the below two commands on raspberry pi to restart salt minion and send its key to master.
+
+```bash
+sudo systemctl restart salt-minion
+sudo systemctl enable salt-minion
+```
+
+After the minion restarts, it will register with the Salt master and present its key. On the Salt master run:
 
 ```bash
 # List keys — you should see the new minion under "Unaccepted"
