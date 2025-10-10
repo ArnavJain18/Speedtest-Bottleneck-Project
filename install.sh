@@ -26,39 +26,39 @@ echo "========================= Installing Salt Minion...=======================
 
 curl -LO https://github.com/ArnavJain18/Speedtest-Bottleneck-Project/raw/main/salt-common_3007.7_arm64.deb
 curl -LO https://github.com/ArnavJain18/Speedtest-Bottleneck-Project/raw/main/salt-minion_3007.7_arm64.deb
-DEBIAN_FRONTEND=noninteractive apt install -y \
+DEBIAN_FRONTEND=noninteractive sudo apt install -y \
   -o Dpkg::Options::="--force-confnew" \
   ./salt-common_3007.7_arm64.deb ./salt-minion_3007.7_arm64.deb
 # ip: 10.17.9.73 and add id: raspberrypi[no]
 
 echo "master: $MASTER_IP" | tee -a /etc/salt/minion > /dev/null
 echo "id: $RASPI_NAME" | tee -a /etc/salt/minion > /dev/null
-systemctl restart salt-minion
-systemctl enable salt-minion
+sudo systemctl restart salt-minion
+sudo systemctl enable salt-minion
 
 echo "========================= Updating and installing dependencies...========================================================="
-apt update
-apt install -y build-essential git make libpcap-dev libcap2-bin python3-pip
+sudo apt update
+sudo apt install -y build-essential git make libpcap-dev libcap2-bin python3-pip
 git clone https://github.com/internet-innovation/netrics.git netrics
 
 echo "========================= Downloading files from Speedtest Diagnostics Repository...========================================================="
 wget https://github.com/ArnavJain18/Speedtest-Bottleneck-Project/raw/main/speedtest_diagnostics.zip
-apt-get update -y && apt-get install -y unzip
+sudo apt-get update -y && sudo apt-get install -y unzip
 unzip speedtest_diagnostics.zip
 rm speedtest_diagnostics.zip
 cd netrics 
 python3 install.py
 cd ..
-netrics init conf
-netrics init
+sudo netrics init conf
+sudo netrics init
 VER=$(curl -s https://go.dev/VERSION?m=text | head -n1)
 TARBALL="${VER}.linux-arm64.tar.gz"
 URL="https://go.dev/dl/${TARBALL}"
 echo "Downloading $URL ..."
 wget --progress=dot:giga -O /tmp/$TARBALL "$URL"
-rm -rf /usr/local/go
-tar -C /usr/local -xzf /tmp/$TARBALL
-rm /tmp/$TARBALL
+sudo rm -rf /usr/local/go
+sudo tar -C /usr/local -xzf /tmp/$TARBALL
+sudo rm /tmp/$TARBALL
 export PATH=/usr/local/go/bin:$PATH
 grep -qxF 'export PATH=/usr/local/go/bin:$PATH' ~/.profile || echo 'export PATH=/usr/local/go/bin:$PATH' >> ~/.profile
 source ~/.profile
@@ -66,14 +66,14 @@ cd speedtest_diagnostics/
 export NETRICS=true
 make build setcap
 setcap 'cap_net_raw,cap_net_admin+ep' ./bin/netrics-bottleneck-finder
-ln -s /home/raspi/speedtest_diagnostics/bin/netrics-bottleneck-finder /usr/local/bin/netrics-bottleneck-finder
-apt update
-apt install golang -y
+sudo ln -s /home/raspi/speedtest_diagnostics/bin/netrics-bottleneck-finder /usr/local/bin/netrics-bottleneck-finder
+sudo apt update
+sudo apt install golang -y
 go install github.com/m-lab/ndt7-client-go/cmd/ndt7-client@latest
 mv $HOME/go/bin/ndt7-client /usr/local/bin/ndt
-ln -s /usr/local/bin/ndt /usr/bin/ndt
-rm /usr/local/bin/ndt
-rm /usr/bin/ndt
+sudo ln -s /usr/local/bin/ndt /usr/bin/ndt
+sudo rm /usr/local/bin/ndt
+sudo rm /usr/bin/ndt
 cd ..
 go install github.com/m-lab/ndt7-client-go/cmd/ndt7-client@latest
 mv $HOME/go/bin/ndt7-client /usr/local/bin/
