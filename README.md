@@ -7,6 +7,12 @@ This README explains how to prepare a Raspberry Pi (headless or with the built-i
 
 ## Quick links
 
+* Downloading Debian bookworm 12 OS for Raspberry pi:
+
+```bash
+https://downloads.raspberrypi.com/raspios_oldstable_arm64/images/raspios_oldstable_arm64-2025-10-02/2025-10-01-raspios-bookworm-arm64.img.xz
+```
+
 * Installer source (curl):
 
 ```bash
@@ -37,7 +43,7 @@ curl -L -o install.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bo
 
 ## 1) Flash OS & connect to Wi‑Fi
 
-1. Flash Raspberry Pi OS onto the SD card / eMMC following Raspberry Pi official instructions (use Raspberry Pi Imager or your preferred flashing tool).
+1. Flash Raspberry Pi OS (link for OS given above) onto the SD card / eMMC following Raspberry Pi official instructions (use Raspberry Pi Imager or your preferred flashing tool).
 2. Boot the Pi and complete the first-boot steps.
 3. Connect to Wi‑Fi using the Pi's UI (network icon in the top-right/system tray) or configure Wi‑Fi via `raspi-config` (for headless setups).
 
