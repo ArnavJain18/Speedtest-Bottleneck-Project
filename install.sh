@@ -1,26 +1,24 @@
 #!/bin/bash
-# Usage: sudo ./install.sh <raspi_name> [master_ip] [master_home]
+# Usage: sudo ./install.sh <raspi_name> [master_ip]
 if [ "$EUID" -ne 0 ]; then
   echo "Please run this script as root:"
-  echo "  sudo ./install.sh <raspi_name> [master_ip] [master_home]"
+  echo "  sudo ./install.sh <raspi_name> [master_ip]"
   exit 1
 fi
 
 if [ -z "$1" ]; then
   echo "Error: raspi_name argument is required."
-  echo "Usage: sudo ./install.sh <raspi_name> [master_ip] [master_home]"
+  echo "Usage: sudo ./install.sh <raspi_name> [master_ip]"
   exit 1
 fi
 
 RASPI_NAME="$1"
 MASTER_IP=${2:-"10.17.9.73"}
-MASTER_HOME=${3:-"/home/baadalvm"}
-REMOTE_DIR=${MASTER_HOME}/netrics_results_${RASPI_NAME}
+REMOTE_DIR=netrics_results_${RASPI_NAME}
 
 echo "Starting installation script..."
 echo "Using  RASPI Name: $RASPI_NAME"
 echo "Using  MASTER IP: $MASTER_IP"
-echo "Using  MASTER HOME: $MASTER_HOME"
 echo "Using  REMOTE DIR: $REMOTE_DIR"
 echo "========================= Installing Salt Minion...========================================================="
 
@@ -76,6 +74,27 @@ cd ..
 go install github.com/m-lab/ndt7-client-go/cmd/ndt7-client@latest
 mv $HOME/go/bin/ndt7-client /usr/local/bin/
 chmod +x /usr/local/bin/ndt7-client
+
+echo "========================= Installing OOKLA Speedtest CLI...========================================================="
+curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
+sudo apt-get install speedtest -y
+speedtest --accept-license --accept-gdpr
+
+echo "========================= Installing Google Cloud SDK...========================================================="
+sudo apt-get install -y apt-transport-https ca-certificates gnupg curl
+
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
+  sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+  sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+
+sudo apt-get update && sudo apt-get install -y google-cloud-cli
+
+echo "========================= Configuring Google Cloud SDK...========================================================="
+mkdir -p $HOME/gcloud_config
+curl -sSL "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/speedtest-bottleneck-finder-64390a06f380.json.gpg" | gpg --batch --passphrase "checkmate" -d > $HOME/gcloud_config/key.json
+gcloud auth activate-service-account --key-file=$HOME/gcloud_config/key.json
 
 echo "========================= Setting up transfer data to master service...========================================================="
 #curl -O https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/netrics_wrapper.sh

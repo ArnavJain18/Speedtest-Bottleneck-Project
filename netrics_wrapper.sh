@@ -3,15 +3,14 @@ set -e  # exit on first error
 set -u  # treat unset variables as error
 
 # --- Config ---
-MASTER_USER="baadalvm"
-MASTER_HOST="10.17.9.73"
-MASTER_PASS="5855bfd1"   # TODO: use SSH key later
+
 REMOTE_DIR="__REMOTE_DIR__"
 
 # --- Temporary workspace ---
 timestamp=$(date +"%Y%m%d_%H%M%S")
 workdir="/tmp/netrics_bottleneck_$timestamp"
-outfile="$workdir/bottleneck_${timestamp}.tar.gz"
+outfile="$workdir/bottleneck_ndt7_${timestamp}.tar.gz"
+outfile_ookla="$workdir/bottleneck_ookla_${timestamp}.tar.gz"
 
 mkdir -p "$workdir"
 
@@ -19,24 +18,44 @@ mkdir -p "$workdir"
 echo "[INFO] Running bottleneck-finder..."
 netrics-bottleneck-finder > "$outfile"
 
+netrics-bottleneck-finder --tool ookla > "$outfile_ookla"
+
 # --- Step 2: Extract files ---
 echo "[INFO] Extracting files..."
 mkdir -p "$workdir/extracted"
 tar -xzf "$outfile" -C "$workdir/extracted"
+mkdir -p "$workdir/extracted_ookla"
+tar -xzf "$outfile_ookla" -C "$workdir/extracted_ookla"
 
-# --- Step 3: Ensure sshpass exists ---
-if ! command -v sshpass &> /dev/null; then
-    echo "[INFO] sshpass not found, installing..."
-    sudo apt-get update && sudo apt-get install -y sshpass
+echo "[INFO] Finding timestamp from filenames..."
+
+json_file=$(find "$workdir/extracted" -name '*.json' -print -quit)
+
+if [ -z "$json_file" ]; then
+    echo "[ERROR] No .json file found in extracted tarball. Aborting."
+    exit 1
 fi
+filename=$(basename "$json_file")
+folder_name=$(echo "$filename" | sed -e 's/metadata-//' -e 's/\.json//')
 
-# --- Step 4: Upload to remote master ---
-echo "[INFO] Uploading files to $MASTER_HOST..."
-sshpass -p "$MASTER_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-  "$workdir"/extracted/* "$MASTER_USER@$MASTER_HOST:$REMOTE_DIR/"
+echo "[INFO] Extracted folder name: $folder_name"
+
+json_file_ookla=$(find "$workdir/extracted_ookla" -name '*.json' -print -quit)
+
+if [ -z "$json_file_ookla" ]; then
+    echo "[ERROR] No .json file found in extracted Ookla tarball. Aborting."
+    exit 1
+fi
+filename_ookla=$(basename "$json_file_ookla")
+folder_name_ookla=$(echo "$filename_ookla" | sed -e 's/metadata-//' -e 's/\.json//')
+echo "[INFO] Extracted Ookla folder name: $folder_name_ookla"
+
+# --- Step 3: Upload to Google Cloud Storage ---
+gsutil cp "$workdir"/extracted/* gs://speedtest-data/$REMOTE_DIR/ndt7/$folder_name/
+gsutil cp "$workdir"/extracted_ookla/* gs://speedtest-data/$REMOTE_DIR/ookla/$folder_name_ookla/
 
 # --- Step 5: Cleanup ---
 echo "[INFO] Cleaning up temporary files..."
 rm -rf "$workdir"
 
-echo "[SUCCESS] Upload complete. Temporary files deleted. Files stored at $REMOTE_DIR on $MASTER_HOST."
+echo "[SUCCESS] Upload complete. Temporary files deleted. Files stored at $REMOTE_DIR on cloud."
