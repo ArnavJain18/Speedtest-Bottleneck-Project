@@ -1,4 +1,4 @@
 bottleneck_ookla:
   type: shell
   exec: [/home/raspi/netrics_wrapper.sh]
-  schedule: "* * * * *"
+  schedule: "*/30 * * * *"
