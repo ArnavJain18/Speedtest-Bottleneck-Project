@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "speedtest-bottleneck-finder",
+  "private_key_id": "dd74ca112644e604c99004c836b5ba319d814fd5",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQD4YIyN7m5eT9qI\ncbv/hk6FTiDT2A173/9oXUi5sODcaV4tHlARvGsbMTFzxpzEngQHBHLMBBGiLvT5\n9H1VL5o4vznta/VzxTvYbcOtw7ekYZ+xb3ruFF2egCaSguC9slML91athktVvVIx\nZ6H/+5yQCmp/OT2hW6hdS4mMvaIwEexAOALrVTqFyuMRrPU6uUYKdr172NsQCNVb\nTzZJZatXR6LmDYFpRtfutwaRWNOWCPDm8K2KROXfryDhvn079FlG/YfClRG2DmY8\nIFKHpbnlvsSxYa+5Vv7mpFH8zLFZCsvBH5NqEtT+zFfKHBt8Uefr6ILXRBfvrE14\nuWmWiO/lAgMBAAECggEAI4iskyGpaJTEDwE2hDgSw7+JssUWKMLDJ4sw/F/xy5bH\ngmzzx5XNPPasvIONqhNxQA/C3K04WJufMKNpyuYkijnRb8YiN43gIfaSKCn3++x7\njEcGr0j6m9J5sjxHKtx4RR39qJWt8XZEbA0HgDffDjxvQARQbOVQEQjdhOUcbwPZ\nQDkgKO8cTT2oXglPLGSyUufXnCFu1fKiz57iukb2NDoAyS0vGVQ01CedefGAl9zX\n8VJ2xv4M0GmhWuplz+PyK39mBbuJDmtt/Qry0kAu+pcy+z58vIvxKRG1VzElKLBF\nqlwYSt04APzcbXQXLA8lhLJMtOGGhZ5rtItO9aRzgQKBgQD/0Jou69hFskRthNtr\nJvhs+0RTVXtxN61Bc8QhkaB+sckTtLpjMwXImf7k7E9gy3uOF1M2QR05oeRq89iA\nvsRIYDt+a5aczixe0G5AjrsHW35ZAL+j65YRwElxLY028dAofZZ6+l50+lZjGzJV\ntT0EqbZK+V+cBzOriSCjKyJClwKBgQD4jpGV6Fq9Af9Q+K1bLWwhzrNwKE1jFzmz\nS/mK21QDtoa5C1+PniL3gx+favZgL/lLtR6OLl/sgHSZ2JuzQKJ3lCYJMyEAbeBh\nLrpfz1VB+Quge7uaWw8v2kNUxXW/mHIp9pmfrEcU7SyiRZ2h83gDC2AM28GpJX8m\nOTwQqOe84wKBgB99Cu2JpFZ36gpdFzEqW9v2VeO4GvjFtLLg0Byds1bFBY5Cacr6\nJdUad5CwMdklUvEbl+eOvk0wy1AK8fRvBvQtvEUEc0ab7kRBfcC+kPEH5xaHjA9e\nWVuYArJGvCIuQ8QoKVS76tKVWfrbBygbpgYj6cdyyL0I+eg8eeL71TzDAoGAX6J7\nYbKFNzQNiJomGW7grCFb6UuYewf0q4gP+91n9gXE0G4P1rKBwbox8KS3J0tOIFMP\n7qTpQ5YpRwiQ3+d+m4PlHqUNjZy5OKtCCps7sqagUp9JD5r5vO+9+GABbja5tmur\nsEQZFXQsOEOQ4z9KbeFyk3/6g5pp0csz0TUr9QECgYB+uPNH6QcUV87wTyN0QLsU\nsawM4mMC27NsvKpM+pFFkv8ebCe058+UT70mfsfKANVYsTlG8k7eceVWP/buBWMF\nhSmmv/EbJGk1edaaakdf97DagCdMYJfC63gxnCGRIJHZXepSwiox2UGQRoJG5kjs\n8lBM50avzlhonP+oF8ZRcA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "raspberry-pi-uploader@speedtest-bottleneck-finder.iam.gserviceaccount.com",
+  "client_id": "111271697134090836845",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/raspberry-pi-uploader%40speedtest-bottleneck-finder.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
