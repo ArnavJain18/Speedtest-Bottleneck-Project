@@ -5,7 +5,7 @@ set -u  # treat unset variables as error
 # --- Config ---
 
 REMOTE_DIR="__REMOTE_DIR__"
-SCRIPTS_DIR=$HOME/Speedtest-Bottleneck-Project/scripts
+SCRIPTS_DIR=/home/raspi/Speedtest-Bottleneck-Project/scripts
 
 # --- Temporary workspace ---
 timestamp=$(date +"%Y%m%d_%H%M%S")
@@ -54,9 +54,10 @@ folder_name_ookla=$(echo "$filename_ookla" | sed -e 's/metadata-//' -e 's/\.json
 echo "[INFO] Extracted Ookla folder name: $folder_name_ookla"
 
 echo "[INFO] Processing pcap and json files to extract RTT samples..."
+cd "$SCRIPTS_DIR"
 python "$SCRIPTS_DIR/pcap_processor.py" "$pcap_file" "$json_file"
 python "$SCRIPTS_DIR/pcap_processor.py" "$pcap_file_ookla" "$json_file_ookla"
-
+cd ..
 # --- Step 3: Upload to Google Cloud Storage ---
 gsutil cp "$workdir"/extracted/* gs://speedtest-data/$REMOTE_DIR/ndt7/$folder_name/
 gsutil cp "$workdir"/extracted_ookla/* gs://speedtest-data/$REMOTE_DIR/ookla/$folder_name_ookla/

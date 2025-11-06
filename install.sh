@@ -15,7 +15,7 @@ fi
 RASPI_NAME="$1"
 MASTER_IP=${2:-"10.17.9.73"}
 REMOTE_DIR=netrics_results_${RASPI_NAME}
-MAIN_WORK_DIR=$HOME/Speedtest-Bottleneck-Project
+MAIN_WORK_DIR=/home/raspi/Speedtest-Bottleneck-Project
 
 echo "Starting installation script..."
 echo "Using  RASPI Name: $RASPI_NAME"
@@ -103,11 +103,12 @@ curl -sSL "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Pr
 gcloud auth activate-service-account --key-file=gcloud_config/key.json
 
 echo "========================= Installing Additional Scripts and  Python dependencies...========================================================="
-wget https://github.com/ArnavJain18/Speedtest-Bottleneck-Project/blob/main/scripts.zip
-unzip scripts.zip
-rm scripts.zip
+mkdir scripts
 cd scripts
-pip install -r requirements.txt
+curl -O https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/pcap_processor.py
+curl -O https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/speedtest_boundaries.py
+curl -O https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/requirements.txt
+pip install -r requirements.txt --break-system-packages
 cd ..
 
 echo "========================= Setting up transfer data to master service...========================================================="
