@@ -15,11 +15,17 @@ fi
 RASPI_NAME="$1"
 MASTER_IP=${2:-"10.17.9.73"}
 REMOTE_DIR=netrics_results_${RASPI_NAME}
+MAIN_WORK_DIR=$HOME/Speedtest-Bottleneck-Project
 
 echo "Starting installation script..."
 echo "Using  RASPI Name: $RASPI_NAME"
 echo "Using  MASTER IP: $MASTER_IP"
 echo "Using  REMOTE DIR: $REMOTE_DIR"
+echo "Using  MAIN WORK DIR: $MAIN_WORK_DIR"
+
+mkdir -p $MAIN_WORK_DIR
+cd $MAIN_WORK_DIR
+
 echo "========================= Installing Salt Minion...========================================================="
 
 curl -LO https://github.com/ArnavJain18/Speedtest-Bottleneck-Project/raw/main/salt-common_3007.7_arm64.deb
@@ -92,9 +98,17 @@ curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
 sudo apt-get update && sudo apt-get install -y google-cloud-cli
 
 echo "========================= Configuring Google Cloud SDK...========================================================="
-mkdir -p $HOME/gcloud_config
-curl -sSL "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/speedtest-bottleneck-finder-64390a06f380.json.gpg" | gpg --batch --passphrase "checkmate" -d > $HOME/gcloud_config/key.json
-gcloud auth activate-service-account --key-file=$HOME/gcloud_config/key.json
+mkdir -p gcloud_config
+curl -sSL "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/speedtest-bottleneck-finder-64390a06f380.json.gpg" | gpg --batch --passphrase "checkmate" -d > gcloud_config/key.json
+gcloud auth activate-service-account --key-file=gcloud_config/key.json
+
+echo "========================= Installing Additional Scripts and  Python dependencies...========================================================="
+wget https://github.com/ArnavJain18/Speedtest-Bottleneck-Project/blob/main/scripts.zip
+unzip scripts.zip
+rm scripts.zip
+cd scripts
+pip install -r requirements.txt
+cd ..
 
 echo "========================= Setting up transfer data to master service...========================================================="
 #curl -O https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/netrics_wrapper.sh

@@ -5,6 +5,7 @@ set -u  # treat unset variables as error
 # --- Config ---
 
 REMOTE_DIR="__REMOTE_DIR__"
+SCRIPTS_DIR=$HOME/Speedtest-Bottleneck-Project/scripts
 
 # --- Temporary workspace ---
 timestamp=$(date +"%Y%m%d_%H%M%S")
@@ -30,6 +31,7 @@ tar -xzf "$outfile_ookla" -C "$workdir/extracted_ookla"
 echo "[INFO] Finding timestamp from filenames..."
 
 json_file=$(find "$workdir/extracted" -name '*.json' -print -quit)
+pcap_file=$(find "$workdir/extracted" -name '*.pcap' -print -quit)
 
 if [ -z "$json_file" ]; then
     echo "[ERROR] No .json file found in extracted tarball. Aborting."
@@ -41,6 +43,7 @@ folder_name=$(echo "$filename" | sed -e 's/metadata-//' -e 's/\.json//')
 echo "[INFO] Extracted folder name: $folder_name"
 
 json_file_ookla=$(find "$workdir/extracted_ookla" -name '*.json' -print -quit)
+pcap_file_ookla=$(find "$workdir/extracted_ookla" -name '*.pcap' -print -quit)
 
 if [ -z "$json_file_ookla" ]; then
     echo "[ERROR] No .json file found in extracted Ookla tarball. Aborting."
@@ -49,6 +52,10 @@ fi
 filename_ookla=$(basename "$json_file_ookla")
 folder_name_ookla=$(echo "$filename_ookla" | sed -e 's/metadata-//' -e 's/\.json//')
 echo "[INFO] Extracted Ookla folder name: $folder_name_ookla"
+
+echo "[INFO] Processing pcap and json files to extract RTT samples..."
+python "$SCRIPTS_DIR/pcap_processor.py" "$pcap_file" "$json_file"
+python "$SCRIPTS_DIR/pcap_processor.py" "$pcap_file_ookla" "$json_file_ookla"
 
 # --- Step 3: Upload to Google Cloud Storage ---
 gsutil cp "$workdir"/extracted/* gs://speedtest-data/$REMOTE_DIR/ndt7/$folder_name/
