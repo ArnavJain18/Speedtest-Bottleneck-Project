@@ -108,6 +108,24 @@ mv measurements.yaml /etc/netrics/
 sudo systemctl daemon-reload
 sudo systemctl restart netrics
 
+echo "[INFO] Creating systemd service to run commands on boot..."
+SERVICE_CONTENT="[Unit]
+Description=Custom script to reload daemon and restart netrics
+
+[Service]
+Type=oneshot
+ExecStart=/bin/systemctl daemon-reload
+ExecStart=/bin/systemctl restart netrics
+
+[Install]
+WantedBy=multi-user.target
+"
+
+echo "$SERVICE_CONTENT" > /etc/systemd/system/my-boot-script.service
+sudo systemctl daemon-reload
+sudo systemctl enable my-boot-script.service
+echo "[SUCCESS] Service 'my-boot-script.service' created and enabled."
+
 echo "========================= Yayyy, All installation finished !!...========================================================="
 
 
