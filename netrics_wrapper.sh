@@ -5,7 +5,7 @@ set -u  # treat unset variables as error
 # --- Config ---
 
 REMOTE_DIR="__REMOTE_DIR__"
-SCRIPTS_DIR=/home/raspi/Speedtest-Bottleneck-Project/scripts
+SCRIPTS_DIR=/home/raspi/scripts
 
 # --- Temporary workspace ---
 timestamp=$(date +"%Y%m%d_%H%M%S")

@@ -15,16 +15,11 @@ fi
 RASPI_NAME="$1"
 MASTER_IP=${2:-"10.17.9.73"}
 REMOTE_DIR=netrics_results_${RASPI_NAME}
-MAIN_WORK_DIR=/home/raspi/Speedtest-Bottleneck-Project
 
 echo "Starting installation script..."
 echo "Using  RASPI Name: $RASPI_NAME"
 echo "Using  MASTER IP: $MASTER_IP"
 echo "Using  REMOTE DIR: $REMOTE_DIR"
-echo "Using  MAIN WORK DIR: $MAIN_WORK_DIR"
-
-mkdir -p $MAIN_WORK_DIR
-cd $MAIN_WORK_DIR
 
 echo "========================= Installing Salt Minion...========================================================="
 
