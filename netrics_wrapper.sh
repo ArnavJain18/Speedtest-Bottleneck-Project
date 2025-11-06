@@ -55,8 +55,8 @@ echo "[INFO] Extracted Ookla folder name: $folder_name_ookla"
 
 echo "[INFO] Processing pcap and json files to extract RTT samples..."
 cd "$SCRIPTS_DIR"
-python "$SCRIPTS_DIR/pcap_processor.py" ""$json_file" ""$pcap_file"
-python "$SCRIPTS_DIR/pcap_processor.py" ""$pcap_file_ookla" ""$json_file_ookla"
+python "$SCRIPTS_DIR/pcap_processor.py" "$json_file" "$pcap_file"
+python "$SCRIPTS_DIR/pcap_processor.py" "$json_file_ookla" "$pcap_file_ookla"
 cd ..
 # --- Step 3: Upload to Google Cloud Storage ---
 gsutil cp $json_file gs://speedtest-data/$REMOTE_DIR/ndt7/$folder_name/
