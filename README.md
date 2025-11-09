@@ -37,7 +37,7 @@ curl -L -o install.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bo
 
 * A Raspberry Pi (tested on Pi models running current Raspberry Pi OS)
 * Access to a monitor & keyboard (for the Pi UI) **or** ability to SSH into the Pi
-* A Salt master reachable at `10.17.9.73` by default (see usage below to change)
+* A Salt master reachable at `34.131.196.248` by default (see usage below to change)
 * Internet access to download packages and tools
 
 
