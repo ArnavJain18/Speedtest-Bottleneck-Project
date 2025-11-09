@@ -75,21 +75,20 @@ chmod +x install.sh
 **Usage:**
 
 ```bash
-sudo ./install.sh <raspi_name> [master_ip] [master_home]
+sudo ./install.sh <raspi_name> [master_ip]
 ```
 
 * `<raspi_name>` (required): A unique identifier for this Raspberry Pi. **It MUST be unique** across all minions.
-* `[master_ip]` (optional): IP of the Salt master. If omitted, the script defaults to `10.17.9.73`.
-* `[master_home]` (optional): Absolute path on the master where data will be stored (e.g. `/home/baadalvm`). If omitted, defaults to `/home/baadalvm`.
+* `[master_ip]` (optional): IP of the Salt master. If omitted, the script defaults to `34.131.196.248`.
 
 **Examples:**
 
 ```bash
-# Basic (uses default master IP and home)
+# Basic (uses default master IP)
 sudo ./install.sh raspi-room1
 
 # With explicit master IP and master folder
-sudo ./install.sh raspi-room2 10.17.9.73 /home/baadalvm
+sudo ./install.sh raspi-room2 34.131.196.248
 ```
 
 **Important:** Run with `sudo` exactly as shown. The script expects elevated privileges and will fail or behave incorrectly if not run as root. Also you might be asked to enter Y/N during the installation process, simply proceed by pressing Y.
