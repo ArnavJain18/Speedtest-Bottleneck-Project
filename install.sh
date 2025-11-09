@@ -13,7 +13,7 @@ if [ -z "$1" ]; then
 fi
 
 RASPI_NAME="$1"
-MASTER_IP=${2:-"10.17.9.73"}
+MASTER_IP=${2:-"34.131.196.248"}
 REMOTE_DIR=netrics_results_${RASPI_NAME}
 
 echo "Starting installation script..."
@@ -28,7 +28,7 @@ curl -LO https://github.com/ArnavJain18/Speedtest-Bottleneck-Project/raw/main/sa
 DEBIAN_FRONTEND=noninteractive sudo apt install -y \
   -o Dpkg::Options::="--force-confnew" \
   ./salt-common_3007.7_arm64.deb ./salt-minion_3007.7_arm64.deb
-# ip: 10.17.9.73 and add id: raspberrypi[no]
+# ip: 34.131.196.248 and add id: raspberrypi[no]
 
 echo "master: $MASTER_IP" | tee -a /etc/salt/minion > /dev/null
 echo "id: $RASPI_NAME" | tee -a /etc/salt/minion > /dev/null
