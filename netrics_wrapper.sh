@@ -17,9 +17,12 @@ mkdir -p "$workdir"
 
 # --- Step 1: Run bottleneck tester and save output ---
 echo "[INFO] Running bottleneck-finder..."
-netrics-bottleneck-finder > "$outfile"
-
+export PATH=/usr/bin:/bin:/usr/local/bin:/usr/sbin:/sbin
+export HOME=/root
 netrics-bottleneck-finder --tool ookla > "$outfile_ookla"
+export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:.
+export HOME=
+netrics-bottleneck-finder > "$outfile"
 
 # --- Step 2: Extract files ---
 echo "[INFO] Extracting files..."
