@@ -45,7 +45,7 @@ curl -L -o install.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bo
 
 1. Flash Raspberry Pi OS (link for OS given above) onto the SD card / eMMC following Raspberry Pi official instructions (use Raspberry Pi Imager or your preferred flashing tool).
 2. Boot the Pi and complete the first-boot steps.
-> IMPORTANT: Always keep the username of the pi as "raspi" when asked during boot.
+> IMPORTANT: Always keep the username of the pi as "raspi" when asked during boot and always set the timezone to your local timezone when prompted for first time after boot (eg. Asia/Kolkata)
 3. Connect to Wi‑Fi using the Pi's UI (network icon in the top-right/system tray) or configure Wi‑Fi via `raspi-config` (for headless setups).
 
 > If you plan to use SSH-only (headless), enable SSH from the UI or terminal during the boot.
