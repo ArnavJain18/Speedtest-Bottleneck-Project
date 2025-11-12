@@ -62,8 +62,8 @@ python "$SCRIPTS_DIR/pcap_processor.py" "$json_file" "$pcap_file"
 python "$SCRIPTS_DIR/pcap_processor.py" "$json_file_ookla" "$pcap_file_ookla"
 cd ..
 # --- Step 3: Upload to Google Cloud Storage ---
-gsutil cp $json_file gs://speedtest-data/$REMOTE_DIR/ndt7/$folder_name/
-gsutil cp $json_file_ookla gs://speedtest-data/$REMOTE_DIR/ookla/$folder_name_ookla/
+gsutil cp "$workdir"/extracted/* gs://speedtest-data/$REMOTE_DIR/ndt7/$folder_name/
+gsutil cp "$workdir"/extracted_ookla/* gs://speedtest-data/$REMOTE_DIR/ookla/$folder_name_ookla/
 
 # --- Step 5: Cleanup ---
 echo "[INFO] Cleaning up temporary files..."
