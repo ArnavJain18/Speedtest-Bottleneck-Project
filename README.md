@@ -54,11 +54,10 @@ curl -L -o install.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bo
 ## 2) Open a terminal (local or SSH)
 
 * If you’re using the Pi's desktop UI: open **Terminal**.
-* If you’re using SSH: enable SSH from the UI:
-
-  1. Top-left menu → **Preferences** → **Raspberry Pi Configuration**
-  2. Select the **Interfaces** tab
-  3. Toggle **SSH** to **Enabled**
+* If you’re using SSH: Open a SSH connection using
+  ```bash
+  ssh raspi@<IP>
+  ```
 
 ## 3) Download & make the installer executable
 
