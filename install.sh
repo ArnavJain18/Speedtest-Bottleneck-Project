@@ -119,7 +119,8 @@ sudo systemctl daemon-reload
 sudo systemctl restart netrics
 echo "[INFO] Enabling netrics startup at boot time"
 sudo systemctl enable netrics
-
+echo "[INFO] Enabling SSH startup at boot time"
+sudo systemctl enable ssh
 echo "========================= Yayyy, All installation finished !!...========================================================="
 
 
