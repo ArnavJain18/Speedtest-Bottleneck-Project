@@ -163,3 +163,110 @@ sudo salt '<minion_id>' test.ping
 
 ---
 
+
+# Speedtest Bottleneck Project — macOS Setup
+
+This guide explains how to configure a Mac as an automated diagnostic node for the **Speedtest Bottleneck Project**. The setup installs all necessary network tools, configures Google Cloud authentication, and schedules a background service to run periodic tests.
+
+---
+
+## 1) Install Homebrew
+
+The installation script relies on Homebrew (the macOS package manager) to install dependencies like Go, Wireshark, and Python.
+
+1. Open your Terminal (found in **Applications > Utilities**).
+2. Copy and paste the following command, then press Return:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+3. Follow the **"Next steps"** instructions printed in the terminal after the installation finishes to add Homebrew to your `PATH`.
+4. Verify it is installed by typing:
+
+```bash
+brew --version
+```
+
+---
+
+## 2) Download the Installer
+
+Run the following command to download the macOS-specific installer script from the repository:
+
+```bash
+curl -L -o install_mac.sh https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/install_mac.sh
+```
+
+---
+
+## 3) Run the Installer
+
+The script will create a self-contained folder at `~/speedtest_agent` and configure a background daemon to run the tests every hour.
+
+1. Make the script executable:
+
+```bash
+chmod +x install_mac.sh
+```
+
+2. Run the installer:
+
+```bash
+./install_mac.sh <mac_name>
+```
+
+Replace `<mac_name>` with a unique identifier for this Mac (e.g., `Arnav-MacBook-Air`).
+
+> **NOTE:** During installation, you will be prompted for your macOS login password. This is required to install the background service and Wireshark dependencies. Unlike the Raspberry Pi version, **do not run this script with `sudo`**; the script will ask for permissions only when necessary.
+
+---
+
+## 4) Post‑Install Checks
+
+Everything is installed in `~/speedtest_agent`. You can verify the background service is running with these commands:
+
+### Check the background service status
+
+```bash
+sudo launchctl list | grep com.speedtest.diagnostics
+```
+
+### View the live diagnostic logs
+
+```bash
+# Check standard output
+cat /tmp/speedtest_diagnostics.out
+
+# Check for errors
+cat /tmp/speedtest_diagnostics.err
+```
+
+### Manually trigger a test run
+
+If you want to ensure the pipeline works immediately without waiting for the hour:
+
+```bash
+sudo launchctl start com.speedtest.diagnostics
+```
+
+---
+
+## What the macOS Installer Does
+
+- **Environment Isolation:** Creates a master directory at `~/speedtest_agent` so no random folders are created across your system.
+- **Toolchain Setup:** Installs `go`, `wireshark` (for `tshark`), `gnupg`, and `speedtest-cli`.
+- **Python Sandbox:** Sets up a Python Virtual Environment (`venv`) to install `pandas`, `scapy`, and `dpkt` without affecting your system Python.
+- **GCP Configuration:** Decrypts and activates the Google Cloud Service Account for automated data uploads.
+- **IPv6 Workaround:** Configures the run script to temporarily disable IPv6 during the test to bypass a known Go bug on macOS, ensuring you get 100% RTT samples.
+- **Persistence:** Installs a macOS LaunchDaemon to ensure the script runs automatically every hour and on every boot.
+
+---
+
+## Troubleshooting
+
+- **Permission Denied:** Ensure you ran `chmod +x install_mac.sh`.
+- **No RTT Samples:** If your logs show `NaN` errors, ensure the Mac's Firewall is not in **Stealth Mode** (System Settings > Network > Firewall > Options).
+- **Missing `gcloud`:** If the installer fails to find `gcloud`, ensure you followed the Homebrew **"Next steps"** to update your shell's `PATH`.
+
+
