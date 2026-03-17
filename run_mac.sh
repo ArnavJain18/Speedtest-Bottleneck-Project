@@ -65,7 +65,7 @@ else
 fi
 
 echo "[INFO] Uploading to GCP..."
-source "$(brew --prefix)/share/google-cloud-sdk/path.bash.inc"
+source "__GCLOUD_PATH__/path.bash.inc"
 
 if [[ -n "${folder_name_ookla:-}" ]]; then
     gsutil cp "$workdir"/extracted_ookla/* "gs://speedtest-data/$REMOTE_DIR/ookla/$folder_name_ookla/"
