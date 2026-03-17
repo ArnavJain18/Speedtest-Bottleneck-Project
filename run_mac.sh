@@ -6,7 +6,7 @@ set -u
 REMOTE_DIR="__REMOTE_DIR__"
 
 # --- Dynamic Paths ---
-BASE_DIR="$HOME/speedtest_agent"
+BASE_DIR="__BASE_DIR__"
 SCRIPTS_DIR="$BASE_DIR/scripts"
 BIN_DIR="$BASE_DIR/bin"
 
