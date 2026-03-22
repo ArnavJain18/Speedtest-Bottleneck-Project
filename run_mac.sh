@@ -37,38 +37,82 @@ echo "[INFO] Temporarily disabling IPv6 to bypass Go tool bug..."
 sudo networksetup -setv6off "$SERVICE_NAME"
 sleep 3 
 
+# ==========================================
+# 1. RUN DIAGNOSTICS
+# ==========================================
 echo "[INFO] Running bottleneck-finder with Ookla..."
-sudo env PATH="$PATH" "$BIN_DIR/bottleneck-finder" -I "$ACTIVE_IFACE" -t ookla -a -o "$workdir/ookla"
+# Using || true so a crash in one tool doesn't stop the other
+sudo env PATH="$PATH" "$BIN_DIR/bottleneck-finder" -I "$ACTIVE_IFACE" -t ookla -a -o "$workdir/ookla" || true
 
+echo "[INFO] Running bottleneck-finder with NDT..."
+sudo env PATH="$PATH" "$BIN_DIR/bottleneck-finder" -I "$ACTIVE_IFACE" -t ndt -a -o "$workdir/ndt" || true
+
+# ==========================================
+# 2. EXTRACT ARCHIVES
+# ==========================================
 echo "[INFO] Finding archives to process..."
-archive_ookla=$(find "$workdir/ookla" -name '*.tar.gz' -print -quit)
+archive_ookla=$(find "$workdir/ookla" -name '*.tar.gz' -print -quit 2>/dev/null || true)
+archive_ndt=$(find "$workdir/ndt" -name '*.tar.gz' -print -quit 2>/dev/null || true)
+
 mkdir -p "$workdir/extracted_ookla"
+mkdir -p "$workdir/extracted_ndt"
 
 if [[ -n "$archive_ookla" ]]; then
     tar -xzf "$archive_ookla" -C "$workdir/extracted_ookla"
 else
-    echo "[ERROR] No Ookla archive found. Exiting."
-    exit 1
+    echo "[WARNING] No Ookla archive found."
 fi
 
+if [[ -n "$archive_ndt" ]]; then
+    tar -xzf "$archive_ndt" -C "$workdir/extracted_ndt"
+else
+    echo "[WARNING] No NDT archive found."
+fi
+
+# ==========================================
+# 3. PROCESS DATA (PYTHON)
+# ==========================================
 echo "[INFO] Processing pcap and json files..."
 cd "$SCRIPTS_DIR"
 
-json_file_ookla=$(find "$workdir/extracted_ookla" -name '*metadata*.json' -print -quit)
-pcap_file_ookla=$(find "$workdir/extracted_ookla" -name '*.pcap' -print -quit)
+if [[ -n "$archive_ookla" ]]; then
+    json_file_ookla=$(find "$workdir/extracted_ookla" -name '*metadata*.json' -print -quit)
+    pcap_file_ookla=$(find "$workdir/extracted_ookla" -name '*.pcap' -print -quit)
 
-if [[ -n "$json_file_ookla" && -n "$pcap_file_ookla" ]]; then
-    "$SCRIPTS_DIR/venv/bin/python" "$SCRIPTS_DIR/pcap_processor.py" "$json_file_ookla" "$pcap_file_ookla"
-    folder_name_ookla=$(basename "$json_file_ookla" | sed -e 's/metadata-//' -e 's/.json//')
-else
-    echo "[WARNING] Ookla json/pcap missing."
+    if [[ -n "$json_file_ookla" && -n "$pcap_file_ookla" ]]; then
+        "$SCRIPTS_DIR/venv/bin/python" "$SCRIPTS_DIR/pcap_processor.py" "$json_file_ookla" "$pcap_file_ookla"
+        folder_name_ookla=$(basename "$json_file_ookla" | sed -e 's/metadata-//' -e 's/.json//')
+    else
+        echo "[WARNING] Ookla json/pcap missing."
+    fi
 fi
 
+if [[ -n "$archive_ndt" ]]; then
+    json_file_ndt=$(find "$workdir/extracted_ndt" -name '*metadata*.json' -print -quit)
+    pcap_file_ndt=$(find "$workdir/extracted_ndt" -name '*.pcap' -print -quit)
+
+    if [[ -n "$json_file_ndt" && -n "$pcap_file_ndt" ]]; then
+        "$SCRIPTS_DIR/venv/bin/python" "$SCRIPTS_DIR/pcap_processor.py" "$json_file_ndt" "$pcap_file_ndt"
+        folder_name_ndt=$(basename "$json_file_ndt" | sed -e 's/metadata-//' -e 's/.json//')
+    else
+        echo "[WARNING] NDT json/pcap missing."
+    fi
+fi
+
+# ==========================================
+# 4. UPLOAD TO GCP
+# ==========================================
 echo "[INFO] Uploading to GCP..."
 source "__GCLOUD_PATH__/path.bash.inc"
 
 if [[ -n "${folder_name_ookla:-}" ]]; then
+    echo "[INFO] Uploading Ookla results..."
     gsutil cp "$workdir"/extracted_ookla/* "gs://speedtest-data/$REMOTE_DIR/ookla/$folder_name_ookla/"
+fi
+
+if [[ -n "${folder_name_ndt:-}" ]]; then
+    echo "[INFO] Uploading NDT results..."
+    gsutil cp "$workdir"/extracted_ndt/* "gs://speedtest-data/$REMOTE_DIR/ndt/$folder_name_ndt/"
 fi
 
 echo "[SUCCESS] Data processing and upload complete."
