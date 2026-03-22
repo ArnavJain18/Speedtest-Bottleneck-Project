@@ -112,7 +112,7 @@ fi
 
 if [[ -n "${folder_name_ndt:-}" ]]; then
     echo "[INFO] Uploading NDT results..."
-    gsutil cp "$workdir"/extracted_ndt/* "gs://speedtest-data/$REMOTE_DIR/ndt/$folder_name_ndt/"
+    gsutil cp "$workdir"/extracted_ndt/* "gs://speedtest-data/$REMOTE_DIR/ndt7/$folder_name_ndt/"
 fi
 
 echo "[SUCCESS] Data processing and upload complete."
