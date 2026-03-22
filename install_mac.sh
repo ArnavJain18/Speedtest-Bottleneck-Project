@@ -38,6 +38,9 @@ echo "========================= Checking for Homebrew ========================="
 if ! command -v brew &> /dev/null; then
     echo "Homebrew not found. Installing Homebrew automatically..."
     echo "(You may be prompted for your Mac password to grant installation permissions)"
+
+    # Pre-authenticate sudo so the non-interactive installer doesn't get blocked
+    sudo -v
     
     # 1. Install Homebrew non-interactively
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
