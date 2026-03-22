@@ -1,15 +1,26 @@
 #!/bin/bash
-# Usage: ./install_mac.sh <mac_name>
+# Usage: ./install_mac.sh
 
-set -e
+# --- CONFIGURATION ---
+# USER: PLEASE CHANGE THE LINE BELOW TO A UNIQUE NAME FOR THIS MAC
+# Example: MAC_NAME="Arnav-MacBook-Pro"
+MAC_NAME="__MAC_NAME__"
 
-if [ -z "$1" ]; then
-  echo "Error: mac_name argument is required."
-  echo "Usage: ./install_mac.sh <mac_name>"
+# --- VALIDATION ---
+if [ "$MAC_NAME" == "__MAC_NAME__" ]; then
+  echo "-----------------------------------------------------------------------"
+  echo "ERROR: MAC_NAME is not set."
+  echo "-----------------------------------------------------------------------"
+  echo "Please open this script (install_mac.sh) in a text editor and change"
+  echo "the line: MAC_NAME=\"__MAC_NAME__\""
+  echo "to a unique name for this machine (e.g., MAC_NAME=\"MyMac-01\")."
+  echo "Then save the file and run it again."
+  echo "-----------------------------------------------------------------------"
   exit 1
 fi
 
-MAC_NAME="$1"
+set -e
+
 REMOTE_DIR="netrics_results_${MAC_NAME}"
 INSTALL_DIR="$HOME/speedtest_agent"
 
@@ -25,8 +36,44 @@ cd "$INSTALL_DIR"
 
 echo "========================= Checking for Homebrew ========================="
 if ! command -v brew &> /dev/null; then
-    echo "Homebrew not found. Please install Homebrew first (https://brew.sh/)."
-    exit 1
+    echo "Homebrew not found. Installing Homebrew automatically..."
+    echo "(You may be prompted for your Mac password to grant installation permissions)"
+    
+    # 1. Install Homebrew non-interactively
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    
+    # 2. Determine correct path (Apple Silicon vs Intel)
+    if [[ -x "/opt/homebrew/bin/brew" ]]; then
+        BREW_BIN="/opt/homebrew/bin/brew"
+    elif [[ -x "/usr/local/bin/brew" ]]; then
+        BREW_BIN="/usr/local/bin/brew"
+    else
+        echo "Error: Homebrew installed but executable not found."
+        exit 1
+    fi
+
+    # 3. Load it into the current script so the rest of the installation works
+    eval "$($BREW_BIN shellenv)"
+
+    # 4. Make it permanent for the user's future terminal sessions
+    USER_SHELL=$(basename "$SHELL")
+    if [[ "$USER_SHELL" == "zsh" ]]; then
+        PROFILE_FILE="$HOME/.zprofile"
+    else
+        PROFILE_FILE="$HOME/.bash_profile"
+    fi
+
+    # Only add it if we haven't already added it in the past
+    if ! grep -q "$BREW_BIN shellenv" "$PROFILE_FILE" 2>/dev/null; then
+        echo "Permanently adding Homebrew to $PROFILE_FILE..."
+        echo "" >> "$PROFILE_FILE"
+        echo "# Speedtest Bottleneck Project - Homebrew Path" >> "$PROFILE_FILE"
+        echo "eval \"\$($BREW_BIN shellenv)\"" >> "$PROFILE_FILE"
+    fi
+
+    echo "Homebrew installed and added to PATH successfully!"
+else
+    echo "Homebrew is already installed."
 fi
 
 echo "========================= Installing Global Dependencies ========================="
