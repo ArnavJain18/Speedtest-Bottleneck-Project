@@ -3,6 +3,9 @@
 # =======================================================================
 $ErrorActionPreference = "Continue"
 
+# Start recording all terminal output to a log file
+Start-Transcript -Path "$BASE_DIR\speedtest_diagnostics.log" -Append
+
 # --- Config (Injected by Installer) ---
 $REMOTE_DIR = "__REMOTE_DIR__"
 $BASE_DIR = "__BASE_DIR__"
@@ -128,4 +131,5 @@ try {
     Write-Host "[INFO] Cleaning up temporary files..."
     Set-Location $HOME
     Remove-Item -Path $workdir -Recurse -Force -ErrorAction SilentlyContinue
+    Stop-Transcript
 }
