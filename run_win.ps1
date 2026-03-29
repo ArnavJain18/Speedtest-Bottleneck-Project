@@ -7,8 +7,8 @@ $ErrorActionPreference = "Continue"
 Start-Transcript -Path "$BASE_DIR\speedtest_diagnostics.log" -Append
 
 # --- Config (Injected by Installer) ---
-$REMOTE_DIR = "__REMOTE_DIR__"
-$BASE_DIR = "__BASE_DIR__"
+$REMOTE_DIR = "netrics_results_Aru-Windows-01"
+$BASE_DIR = "C:\Users\singh\speedtest_agent"
 
 # --- Dynamic Paths ---
 $SCRIPTS_DIR = "$BASE_DIR\scripts"
@@ -111,12 +111,20 @@ try {
     
     if ($folder_name_ookla) {
         Write-Host "[INFO] Uploading Ookla results..."
-        cmd.exe /c "gsutil cp `"$workdir\extracted_ookla\*`" `"gs://speedtest-data/$REMOTE_DIR/ookla/$folder_name_ookla/`""
+        $remote_folder = $folder_name_ookla -replace "@", ":"
+        foreach ($file in Get-ChildItem "$workdir\extracted_ookla\*") {
+            $remote_file = $file.Name -replace "@", ":"
+            cmd.exe /c "gsutil cp `"$($file.FullName)`" `"gs://speedtest-data/$REMOTE_DIR/ookla/$remote_folder/$remote_file`""
+        }
     }
 
     if ($folder_name_ndt) {
         Write-Host "[INFO] Uploading NDT results..."
-        cmd.exe /c "gsutil cp `"$workdir\extracted_ndt\*`" `"gs://speedtest-data/$REMOTE_DIR/ndt/$folder_name_ndt/`""
+        $remote_folder = $folder_name_ndt -replace "@", ":"
+        foreach ($file in Get-ChildItem "$workdir\extracted_ndt\*") {
+            $remote_file = $file.Name -replace "@", ":"
+            cmd.exe /c "gsutil cp `"$($file.FullName)`" `"gs://speedtest-data/$REMOTE_DIR/ndt7/$remote_folder/$remote_file`""
+        }
     }
 
     Write-Host "[SUCCESS] Data processing and upload complete."
@@ -133,3 +141,4 @@ try {
     Remove-Item -Path $workdir -Recurse -Force -ErrorAction SilentlyContinue
     Stop-Transcript
 }
+
