@@ -269,4 +269,35 @@ sudo launchctl start com.speedtest.diagnostics
 - **No RTT Samples:** If your logs show `NaN` errors, ensure the Mac's Firewall is not in **Stealth Mode** (System Settings > Network > Firewall > Options).
 - **Missing `gcloud`:** If the installer fails to find `gcloud`, ensure you followed the Homebrew **"Next steps"** to update your shell's `PATH`.
 
+# Speedtest Bottleneck Project — Windows Setup
 
+This guide explains how to configure a Windows Laptop as an automated diagnostic node for the **Speedtest Bottleneck Project**. The setup installs all necessary network tools, configures Google Cloud authentication, and schedules a background service to run periodic tests.
+
+> **Very Important:** Before running below commands open a powershell window in administrator mode.
+
+---
+## 1) Download the Installer
+
+Run the following command to download the windows-specific installer script from the repository:
+
+```bash
+curl -L -o install_win.ps1 https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/install_win.ps1
+```
+
+---
+
+## 2) Run the Installer
+
+The script will create a self-contained folder at `~/speedtest_agent` and configure a background daemon to run the tests every hour.
+
+Run the installer:
+
+```bash
+.\install_win.ps1
+```
+
+Replace `__WIN_NAME__` with a unique identifier for this Mac (e.g., `Arnav-MacBook-Air`).
+
+> **NOTE:** Without setting the $WIN_NAME variable the script will not run, ensure it is set before running the script
+
+---
