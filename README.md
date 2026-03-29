@@ -281,7 +281,7 @@ This guide explains how to configure a Windows Laptop as an automated diagnostic
 Run the following command to download the windows-specific installer script from the repository:
 
 ```bash
-curl -L -o install_win.ps1 https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/install_win.ps1
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/install_win.ps1" -OutFile ".\install_win.ps1"
 ```
 
 ---
