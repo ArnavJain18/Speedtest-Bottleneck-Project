@@ -4,7 +4,7 @@
 # --- CONFIGURATION ---
 # USER: PLEASE CHANGE THE LINE BELOW TO A UNIQUE NAME FOR THIS MAC
 # Example: MAC_NAME="Arnav-MacBook-Pro"
-MAC_NAME="Mac_test"
+MAC_NAME="__MAC_NAME__"
 
 # --- VALIDATION ---
 if [ "$MAC_NAME" == "__MAC_NAME__" ]; then
