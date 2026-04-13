@@ -4,7 +4,7 @@
 # --- CONFIGURATION ---
 # USER: PLEASE CHANGE THE LINE BELOW TO A UNIQUE NAME FOR THIS MAC
 # Example: MAC_NAME="Arnav-MacBook-Pro"
-MAC_NAME="__MAC_NAME__"
+MAC_NAME="Mac_test"
 
 # --- VALIDATION ---
 if [ "$MAC_NAME" == "__MAC_NAME__" ]; then
@@ -26,8 +26,14 @@ INSTALL_DIR="$HOME/speedtest_agent"
 
 # ==========================================
 # LOGGING SETUP
+# Create INSTALL_DIR first so the log file path always exists,
+# regardless of whether the user chose $HOME or $INSTALL_DIR.
 # ==========================================
-LOG_FILE="$HOME/speedtest_install.log"
+mkdir -p "$INSTALL_DIR/bin"
+mkdir -p "$INSTALL_DIR/scripts"
+mkdir -p "$INSTALL_DIR/gcloud_config"
+
+LOG_FILE="$INSTALL_DIR/speedtest_install.log"
 
 log() {
     local level="$1"
@@ -46,10 +52,6 @@ log "INFO" "============================================================"
 log "INFO" "MAC Name:          $MAC_NAME"
 log "INFO" "Install Directory: $INSTALL_DIR"
 log "INFO" "Log File:          $LOG_FILE"
-
-mkdir -p "$INSTALL_DIR/bin"
-mkdir -p "$INSTALL_DIR/scripts"
-mkdir -p "$INSTALL_DIR/gcloud_config"
 
 cd "$INSTALL_DIR"
 
@@ -155,34 +157,127 @@ brew_install_if_missing "wireshark"
 brew_install_if_missing "go"
 
 # ==========================================
-# 3. OOKLA SPEEDTEST CLI  (binary download — no Xcode, no brew tap build)
-# We download the pre-built universal binary directly from Ookla's CDN.
-# This is the same binary the Ookla website offers for download and avoids
-# the 'brew tap teamookla/speedtest' formula which triggers an Xcode build
-# on older Macs (extremely slow / fails on older CLT versions).
+# 3. OOKLA SPEEDTEST CLI
+#
+# Strategy (tried in order, stops at first success):
+#   A) Binary already installed  → skip entirely
+#   B) Direct CDN download       → fastest, no Xcode
+#   C) brew tap + install        → fallback; works if CDN is back
+#   D) Manual download prompt    → last resort with clear instructions
+#
+# The teamookla/homebrew-speedtest tap formula directly downloads the
+# same CDN binary (no source build, no Xcode).  However the CDN URLs
+# periodically return 403.  Strategy B+C together cover both cases.
 # ==========================================
 log "INFO" "========================= Installing Ookla Speedtest CLI ========================="
 
 OOKLA_BIN="$INSTALL_DIR/bin/speedtest"
+ARCH=$(uname -m)
+
+install_ookla_from_github() {
+    # Primary source: universal binary hosted in your own GitHub repo.
+    # Upload ookla-speedtest-1.2.0-macosx-universal.tgz to the repo root
+    # (same place as speedtest_diagnostics.zip) and this will just work.
+    local url="https://github.com/ArnavJain18/Speedtest-Bottleneck-Project/raw/main/ookla-speedtest-1.2.0-macosx-universal.tgz"
+    log "INFO" "  Trying GitHub-hosted universal binary..."
+    local tmp
+    tmp=$(mktemp -d)
+    if curl -fsSL --max-time 60 "$url" -o "$tmp/speedtest.tgz" 2>/dev/null; then
+        tar -xzf "$tmp/speedtest.tgz" -C "$tmp"
+        # The tgz extracts into a subfolder; find the binary regardless of layout
+        local bin
+        bin=$(find "$tmp" -type f -name "speedtest" -not -name "*.md" -not -name "*.5" | head -1)
+        if [[ -n "$bin" ]]; then
+            cp "$bin" "$OOKLA_BIN"
+            chmod +x "$OOKLA_BIN"
+            rm -rf "$tmp"
+            log "INFO" "  GitHub download succeeded."
+            return 0
+        fi
+    fi
+    rm -rf "$tmp"
+    log "INFO" "  GitHub download failed — trying next strategy..."
+    return 1
+}
+
+install_ookla_from_cdn() {
+    # Fallback: Ookla's own CDN (may return 403 intermittently).
+    # Tries universal binary first, then arch-specific ones.
+    local ARCH
+    ARCH=$(uname -m)
+    local urls=(
+        "https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-macosx-universal.tgz"
+        "https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-macosx-arm64.tgz"
+        "https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-macosx-x86_64.tgz"
+    )
+    local tmp
+    tmp=$(mktemp -d)
+    for url in "${urls[@]}"; do
+        log "INFO" "  Trying Ookla CDN: $url"
+        if curl -fsSL --max-time 30 "$url" -o "$tmp/speedtest.tgz" 2>/dev/null; then
+            tar -xzf "$tmp/speedtest.tgz" -C "$tmp"
+            local bin
+            bin=$(find "$tmp" -type f -name "speedtest" -not -name "*.md" -not -name "*.5" | head -1)
+            if [[ -n "$bin" ]]; then
+                cp "$bin" "$OOKLA_BIN"
+                chmod +x "$OOKLA_BIN"
+                rm -rf "$tmp"
+                log "INFO" "  CDN download succeeded."
+                return 0
+            fi
+        fi
+        log "INFO" "  CDN URL returned error — trying next..."
+    done
+    rm -rf "$tmp"
+    return 1
+}
+
+install_ookla_via_brew_tap() {
+    log "INFO" "  Trying Homebrew tap (teamookla/speedtest)..."
+    # The tap formula downloads the same Ookla binary — no source build.
+    # HOMEBREW_NO_INSTALL_FROM_API=1 forces brew to use the tap formula directly.
+    if HOMEBREW_NO_AUTO_UPDATE=1 brew tap teamookla/speedtest 2>>"$LOG_FILE" \
+    && HOMEBREW_NO_AUTO_UPDATE=1 brew install speedtest --force 2>>"$LOG_FILE"; then
+        # Copy the brew-managed binary into our own bin/ so run_mac.sh finds it
+        local brew_bin
+        brew_bin=$(brew --prefix)/bin/speedtest
+        if [[ -x "$brew_bin" ]]; then
+            cp "$brew_bin" "$OOKLA_BIN"
+            chmod +x "$OOKLA_BIN"
+            log "INFO" "  Homebrew tap install succeeded."
+            return 0
+        fi
+    fi
+    return 1
+}
 
 if [[ -x "$OOKLA_BIN" ]]; then
-    log "INFO" "Ookla speedtest binary already present at $OOKLA_BIN — skipping download."
+    log "INFO" "Ookla speedtest binary already present at $OOKLA_BIN — skipping."
 else
-    ARCH=$(uname -m)
-    if [[ "$ARCH" == "arm64" ]]; then
-        OOKLA_URL="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-macosx-arm64.tgz"
-    else
-        OOKLA_URL="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-macosx-x86_64.tgz"
-    fi
+    log "INFO" "Ookla binary not found. Trying install strategies (arch=$(uname -m))..."
 
-    log "INFO" "Downloading Ookla binary for arch=$ARCH from $OOKLA_URL ..."
-    OOKLA_TMP=$(mktemp -d)
-    curl -fsSL "$OOKLA_URL" -o "$OOKLA_TMP/speedtest.tgz"
-    tar -xzf "$OOKLA_TMP/speedtest.tgz" -C "$OOKLA_TMP"
-    cp "$OOKLA_TMP/speedtest" "$OOKLA_BIN"
-    chmod +x "$OOKLA_BIN"
-    rm -rf "$OOKLA_TMP"
-    log "INFO" "Ookla binary installed at $OOKLA_BIN"
+    if install_ookla_from_github; then
+        : # success — GitHub-hosted universal binary
+    elif install_ookla_from_cdn; then
+        : # success — Ookla's own CDN
+    elif install_ookla_via_brew_tap; then
+        : # success — Homebrew tap
+    else
+        # ---------- MANUAL FALLBACK ----------
+        log "ERROR" "------------------------------------------------------------"
+        log "ERROR" "Could not download the Ookla Speedtest CLI automatically."
+        log "ERROR" ""
+        log "ERROR" "Please download it manually:"
+        log "ERROR" "  1. Open this URL in your browser:"
+        log "ERROR" "     https://www.speedtest.net/apps/cli"
+        log "ERROR" "  2. Download the macOS package (.tgz) and unzip it."
+        log "ERROR" "  3. Copy the 'speedtest' binary to:"
+        log "ERROR" "     $OOKLA_BIN"
+        log "ERROR" "  4. Run:  chmod +x $OOKLA_BIN"
+        log "ERROR" "  5. Re-run this installer."
+        log "ERROR" "------------------------------------------------------------"
+        exit 1
+    fi
 fi
 
 # Accept license/GDPR non-interactively (safe to re-run)
