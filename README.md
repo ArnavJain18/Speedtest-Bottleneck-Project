@@ -192,10 +192,10 @@ chmod +x install_mac.sh
 2. Run the installer:
 
 ```bash
-./install_mac.sh <mac_name>
+./install_mac.sh
 ```
 
-Replace `<mac_name>` with a unique identifier for this Mac (e.g., `Arnav-MacBook-Air`).
+> **NOTE:** Replace `__MAC_NAME__` with a unique identifier for this Mac (e.g., `Arnav-MacBook-Air`) by opening the script in a text editor and editing it . You will see this at the top of the script. If variable is not set script will throw error.
 
 > **NOTE:** During installation, you will be prompted for your macOS login password. This is required to install the background service and Wireshark dependencies. Unlike the Raspberry Pi version, **do not run this script with `sudo`**; the script will ask for permissions only when necessary.
 
