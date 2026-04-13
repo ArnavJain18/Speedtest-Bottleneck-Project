@@ -169,28 +169,7 @@ sudo salt '<minion_id>' test.ping
 This guide explains how to configure a Mac as an automated diagnostic node for the **Speedtest Bottleneck Project**. The setup installs all necessary network tools, configures Google Cloud authentication, and schedules a background service to run periodic tests.
 
 ---
-
-## 1) Install Homebrew
-
-The installation script relies on Homebrew (the macOS package manager) to install dependencies like Go, Wireshark, and Python.
-
-1. Open your Terminal (found in **Applications > Utilities**).
-2. Copy and paste the following command, then press Return:
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-3. Follow the **"Next steps"** instructions printed in the terminal after the installation finishes to add Homebrew to your `PATH`.
-4. Verify it is installed by typing:
-
-```bash
-brew --version
-```
-
----
-
-## 2) Download the Installer
+## 1) Download the Installer
 
 Run the following command to download the macOS-specific installer script from the repository:
 
@@ -200,7 +179,7 @@ curl -L -o install_mac.sh https://raw.githubusercontent.com/ArnavJain18/Speedtes
 
 ---
 
-## 3) Run the Installer
+## 2) Run the Installer
 
 The script will create a self-contained folder at `~/speedtest_agent` and configure a background daemon to run the tests every hour.
 
@@ -222,7 +201,7 @@ Replace `<mac_name>` with a unique identifier for this Mac (e.g., `Arnav-MacBook
 
 ---
 
-## 4) Post‑Install Checks
+## 3) Post‑Install Checks
 
 Everything is installed in `~/speedtest_agent`. You can verify the background service is running with these commands:
 
