@@ -24,9 +24,28 @@ set -e
 REMOTE_DIR="netrics_results_${MAC_NAME}"
 INSTALL_DIR="$HOME/speedtest_agent"
 
-echo "Starting macOS installation script..."
-echo "Using MAC Name: $MAC_NAME"
-echo "Project Directory: $INSTALL_DIR"
+# ==========================================
+# LOGGING SETUP
+# ==========================================
+LOG_FILE="$HOME/speedtest_install.log"
+
+log() {
+    local level="$1"
+    shift
+    local msg="$*"
+    local ts
+    ts=$(date "+%Y-%m-%d %H:%M:%S")
+    local line="[$ts] [$level] $msg"
+    echo "$line"
+    echo "$line" >> "$LOG_FILE"
+}
+
+log "INFO" "============================================================"
+log "INFO" "  Speedtest Diagnostics Installer - $(date)"
+log "INFO" "============================================================"
+log "INFO" "MAC Name:          $MAC_NAME"
+log "INFO" "Install Directory: $INSTALL_DIR"
+log "INFO" "Log File:          $LOG_FILE"
 
 mkdir -p "$INSTALL_DIR/bin"
 mkdir -p "$INSTALL_DIR/scripts"
@@ -34,31 +53,53 @@ mkdir -p "$INSTALL_DIR/gcloud_config"
 
 cd "$INSTALL_DIR"
 
-echo "========================= Checking for Homebrew ========================="
-if ! command -v brew &> /dev/null; then
-    echo "Homebrew not found. Installing Homebrew automatically..."
-    echo "(You may be prompted for your Mac password to grant installation permissions)"
+# ==========================================
+# HELPER: brew_install_if_missing
+# Skips 'brew install' (and any Xcode checks) if the formula is already installed.
+# ==========================================
+brew_install_if_missing() {
+    local pkg="$1"
+    if brew list --formula "$pkg" &>/dev/null; then
+        log "INFO" "[$pkg] Already installed via Homebrew — skipping."
+    else
+        log "INFO" "[$pkg] Installing via Homebrew..."
+        HOMEBREW_NO_AUTO_UPDATE=1 brew install "$pkg"
+    fi
+}
 
-    # Pre-authenticate sudo so the non-interactive installer doesn't get blocked
+brew_cask_install_if_missing() {
+    local pkg="$1"
+    if brew list --cask "$pkg" &>/dev/null; then
+        log "INFO" "[$pkg] Already installed (cask) — skipping."
+    else
+        log "INFO" "[$pkg] Installing cask via Homebrew..."
+        HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask "$pkg"
+    fi
+}
+
+# ==========================================
+# 1. HOMEBREW
+# ==========================================
+log "INFO" "========================= Checking for Homebrew ========================="
+if ! command -v brew &> /dev/null; then
+    log "INFO" "Homebrew not found. Installing Homebrew automatically..."
+    log "INFO" "(You may be prompted for your Mac password to grant installation permissions)"
+
     sudo -v
-    
-    # 1. Install Homebrew non-interactively
+
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    
-    # 2. Determine correct path (Apple Silicon vs Intel)
+
     if [[ -x "/opt/homebrew/bin/brew" ]]; then
         BREW_BIN="/opt/homebrew/bin/brew"
     elif [[ -x "/usr/local/bin/brew" ]]; then
         BREW_BIN="/usr/local/bin/brew"
     else
-        echo "Error: Homebrew installed but executable not found."
+        log "ERROR" "Homebrew installed but executable not found. Aborting."
         exit 1
     fi
 
-    # 3. Load it into the current script so the rest of the installation works
     eval "$($BREW_BIN shellenv)"
 
-    # 4. Make it permanent for the user's future terminal sessions
     USER_SHELL=$(basename "$SHELL")
     if [[ "$USER_SHELL" == "zsh" ]]; then
         PROFILE_FILE="$HOME/.zprofile"
@@ -66,101 +107,249 @@ if ! command -v brew &> /dev/null; then
         PROFILE_FILE="$HOME/.bash_profile"
     fi
 
-    # Only add it if we haven't already added it in the past
     if ! grep -q "$BREW_BIN shellenv" "$PROFILE_FILE" 2>/dev/null; then
-        echo "Permanently adding Homebrew to $PROFILE_FILE..."
+        log "INFO" "Permanently adding Homebrew to $PROFILE_FILE..."
         echo "" >> "$PROFILE_FILE"
         echo "# Speedtest Bottleneck Project - Homebrew Path" >> "$PROFILE_FILE"
         echo "eval \"\$($BREW_BIN shellenv)\"" >> "$PROFILE_FILE"
     fi
 
-    echo "Homebrew installed and added to PATH successfully!"
+    log "INFO" "Homebrew installed and added to PATH successfully."
 else
-    echo "Homebrew is already installed."
+    log "INFO" "Homebrew is already installed."
 fi
 
-echo "========================= Installing Global Dependencies ========================="
-brew update
-brew install make libpcap python3 wireshark go gnupg
+# ==========================================
+# 2. DEPENDENCIES
+# Run 'brew update' only once, only if it hasn't been run recently (within 24h).
+# Install each package only if it is not already present.
+# HOMEBREW_NO_AUTO_UPDATE=1 prevents brew from silently re-running update on
+# every individual 'brew install' call (which is the default behaviour that
+# causes multi-minute delays).
+# ==========================================
+log "INFO" "========================= Checking / Installing Dependencies ========================="
 
-echo "========================= Downloading Speedtest Diagnostics ========================="
-curl -LO https://github.com/ArnavJain18/Speedtest-Bottleneck-Project/raw/main/speedtest_diagnostics.zip
+BREW_UPDATED_FLAG="/tmp/.speedtest_brew_updated_today"
+TODAY=$(date +%Y%m%d)
+
+if [[ ! -f "$BREW_UPDATED_FLAG" ]] || [[ "$(cat "$BREW_UPDATED_FLAG" 2>/dev/null)" != "$TODAY" ]]; then
+    log "INFO" "Running 'brew update' (once per day)..."
+    brew update
+    echo "$TODAY" > "$BREW_UPDATED_FLAG"
+else
+    log "INFO" "'brew update' already ran today — skipping."
+fi
+
+# Export so every brew call in this session skips auto-update
+export HOMEBREW_NO_AUTO_UPDATE=1
+
+for pkg in make libpcap python3 gnupg; do
+    brew_install_if_missing "$pkg"
+done
+
+# wireshark: needed for tshark/dumpcap — install headless (no GUI, no Xcode Qt build)
+# The 'wireshark' formula on Homebrew is the CLI-only build; the GUI lives in the cask.
+brew_install_if_missing "wireshark"
+
+# go: required to compile speedtest_diagnostics and ndt7-client
+brew_install_if_missing "go"
+
+# ==========================================
+# 3. OOKLA SPEEDTEST CLI  (binary download — no Xcode, no brew tap build)
+# We download the pre-built universal binary directly from Ookla's CDN.
+# This is the same binary the Ookla website offers for download and avoids
+# the 'brew tap teamookla/speedtest' formula which triggers an Xcode build
+# on older Macs (extremely slow / fails on older CLT versions).
+# ==========================================
+log "INFO" "========================= Installing Ookla Speedtest CLI ========================="
+
+OOKLA_BIN="$INSTALL_DIR/bin/speedtest"
+
+if [[ -x "$OOKLA_BIN" ]]; then
+    log "INFO" "Ookla speedtest binary already present at $OOKLA_BIN — skipping download."
+else
+    ARCH=$(uname -m)
+    if [[ "$ARCH" == "arm64" ]]; then
+        OOKLA_URL="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-macosx-arm64.tgz"
+    else
+        OOKLA_URL="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-macosx-x86_64.tgz"
+    fi
+
+    log "INFO" "Downloading Ookla binary for arch=$ARCH from $OOKLA_URL ..."
+    OOKLA_TMP=$(mktemp -d)
+    curl -fsSL "$OOKLA_URL" -o "$OOKLA_TMP/speedtest.tgz"
+    tar -xzf "$OOKLA_TMP/speedtest.tgz" -C "$OOKLA_TMP"
+    cp "$OOKLA_TMP/speedtest" "$OOKLA_BIN"
+    chmod +x "$OOKLA_BIN"
+    rm -rf "$OOKLA_TMP"
+    log "INFO" "Ookla binary installed at $OOKLA_BIN"
+fi
+
+# Accept license/GDPR non-interactively (safe to re-run)
+log "INFO" "Accepting Ookla license and GDPR terms..."
+"$OOKLA_BIN" --accept-license --accept-gdpr > /dev/null 2>&1 || true
+
+# Make speedtest reachable on PATH for the rest of this script
+export PATH="$INSTALL_DIR/bin:$PATH"
+
+# ==========================================
+# 4. SPEEDTEST DIAGNOSTICS (bottleneck-finder)
+# ==========================================
+log "INFO" "========================= Downloading Speedtest Diagnostics ========================="
+cd "$INSTALL_DIR"
+curl -fsSL -o speedtest_diagnostics.zip \
+    https://github.com/ArnavJain18/Speedtest-Bottleneck-Project/raw/main/speedtest_diagnostics.zip
 unzip -o speedtest_diagnostics.zip
 rm speedtest_diagnostics.zip
 
-echo "========================= Building Bottleneck Finder ========================="
+log "INFO" "========================= Building Bottleneck Finder ========================="
 cd speedtest_diagnostics/
 make build
 cp bin/bottleneck-finder "$INSTALL_DIR/bin/"
 cd ..
 
-echo "========================= Installing NDT7 Client ========================="
-export GOPATH="$INSTALL_DIR/go_workspace"
-go install github.com/m-lab/ndt7-client-go/cmd/ndt7-client@latest
-cp "$GOPATH/bin/ndt7-client" "$INSTALL_DIR/bin/ndt"
-cp "$GOPATH/bin/ndt7-client" "$INSTALL_DIR/bin/ndt7-client"
-chmod +x "$INSTALL_DIR/bin/ndt" "$INSTALL_DIR/bin/ndt7-client"
-go clean -modcache
-rm -rf "$INSTALL_DIR/go_workspace"
+# ==========================================
+# 5. NDT7 CLIENT
+# ==========================================
+log "INFO" "========================= Installing NDT7 Client ========================="
 
-echo "========================= Installing OOKLA Speedtest CLI ========================="
-brew tap teamookla/speedtest
-brew install speedtest
-speedtest --accept-license --accept-gdpr
-
-echo "========================= Installing Google Cloud SDK ========================="
-if ! command -v gcloud &> /dev/null; then
-    brew install --cask google-cloud-sdk
+NDT_BIN="$INSTALL_DIR/bin/ndt7-client"
+if [[ -x "$NDT_BIN" ]]; then
+    log "INFO" "ndt7-client already present — skipping Go install."
 else
-    echo "Google Cloud SDK is already installed."
+    log "INFO" "Compiling ndt7-client via 'go install' ..."
+    export GOPATH="$INSTALL_DIR/go_workspace"
+    go install github.com/m-lab/ndt7-client-go/cmd/ndt7-client@latest
+    cp "$GOPATH/bin/ndt7-client" "$INSTALL_DIR/bin/ndt"
+    cp "$GOPATH/bin/ndt7-client" "$NDT_BIN"
+    chmod +x "$INSTALL_DIR/bin/ndt" "$NDT_BIN"
+    go clean -modcache
+    rm -rf "$INSTALL_DIR/go_workspace"
+    log "INFO" "ndt7-client installed."
 fi
 
-echo "========================= Configuring Google Cloud SDK ========================="
-curl -sSL "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/speedtest-bottleneck-finder-64390a06f380.json.gpg" | gpg --batch --passphrase "checkmate" -d > "$INSTALL_DIR/gcloud_config/key.json"
+# ==========================================
+# 6. GOOGLE CLOUD SDK
+# ==========================================
+log "INFO" "========================= Installing Google Cloud SDK ========================="
+
+# Resolve the actual gcloud path robustly, covering both Apple Silicon and Intel Macs.
+# We do this BEFORE installing so we can reuse the logic whether gcloud was
+# pre-installed or just installed by us.
+resolve_gcloud_path() {
+    # Priority 1: already on PATH
+    if command -v gcloud &>/dev/null; then
+        local sdk_root
+        sdk_root=$(gcloud info --format="value(installation.sdk_root)" 2>/dev/null || true)
+        if [[ -f "$sdk_root/path.bash.inc" ]]; then
+            echo "$sdk_root"
+            return
+        fi
+    fi
+
+    # Priority 2: well-known Homebrew cask locations
+    local candidates=(
+        "$(brew --prefix)/share/google-cloud-sdk"   # Apple Silicon: /opt/homebrew/share/...
+        "/usr/local/share/google-cloud-sdk"          # Intel default
+        "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk"
+        "/opt/homebrew/Caskroom/google-cloud-sdk/latest/google-cloud-sdk"
+    )
+    for dir in "${candidates[@]}"; do
+        if [[ -f "$dir/path.bash.inc" ]]; then
+            echo "$dir"
+            return
+        fi
+    done
+
+    echo ""  # not found
+}
+
 if ! command -v gcloud &> /dev/null; then
-    source "$(brew --prefix)/share/google-cloud-sdk/path.bash.inc"
+    log "INFO" "Google Cloud SDK not found. Installing via Homebrew cask..."
+    brew_cask_install_if_missing "google-cloud-sdk"
+else
+    log "INFO" "Google Cloud SDK is already installed."
 fi
+
+# Source path.bash.inc so gcloud is usable in the rest of this script,
+# then record the resolved path for injection into run_mac.sh.
+GCLOUD_INSTALLED_PATH=$(resolve_gcloud_path)
+
+if [[ -z "$GCLOUD_INSTALLED_PATH" ]]; then
+    log "ERROR" "Could not locate google-cloud-sdk path.bash.inc after installation."
+    log "ERROR" "Searched brew prefix: $(brew --prefix)/share/google-cloud-sdk"
+    log "ERROR" "Please install Google Cloud SDK manually and re-run."
+    exit 1
+fi
+
+log "INFO" "Google Cloud SDK path resolved to: $GCLOUD_INSTALLED_PATH"
+
+# Load gcloud into current shell (needed for 'gcloud auth' below)
+# shellcheck disable=SC1090
+source "$GCLOUD_INSTALLED_PATH/path.bash.inc"
+
+# ==========================================
+# 7. CONFIGURE GCLOUD AUTH
+# ==========================================
+log "INFO" "========================= Configuring Google Cloud SDK ========================="
+curl -fsSL \
+    "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/speedtest-bottleneck-finder-64390a06f380.json.gpg" \
+    | gpg --batch --passphrase "checkmate" -d > "$INSTALL_DIR/gcloud_config/key.json"
+
 gcloud auth activate-service-account --key-file="$INSTALL_DIR/gcloud_config/key.json"
+log "INFO" "GCloud service account activated."
 
-echo "========================= Installing Python Dependencies ========================="
+# ==========================================
+# 8. PYTHON DEPENDENCIES
+# ==========================================
+log "INFO" "========================= Installing Python Dependencies ========================="
 cd "$INSTALL_DIR/scripts"
-curl -O https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/pcap_processor.py
-curl -O https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/speedtest_boundaries.py
-curl -O https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/requirements.txt
+curl -fsSO https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/pcap_processor.py
+curl -fsSO https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/speedtest_boundaries.py
+curl -fsSO https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/requirements.txt
 
-echo "Creating Python virtual environment..."
+log "INFO" "Creating Python virtual environment..."
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install --quiet -r requirements.txt
 deactivate
+log "INFO" "Python dependencies installed."
 
-echo "========================= Setting up Automation Scripts ========================="
-# Calculate gcloud path once during install
-GCLOUD_INSTALLED_PATH="$(brew --prefix)/share/google-cloud-sdk"
+# ==========================================
+# 9. GENERATE run_mac.sh
+# ==========================================
+log "INFO" "========================= Setting up Automation Scripts ========================="
 
-# Download and configure the run script
-curl -sL "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/run_mac.sh" \
-  | sed -e "s|__REMOTE_DIR__|$REMOTE_DIR|g" \
+curl -fsSL "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/run_mac.sh" \
+  | sed \
+        -e "s|__REMOTE_DIR__|$REMOTE_DIR|g" \
         -e "s|__BASE_DIR__|$INSTALL_DIR|g" \
         -e "s|__GCLOUD_PATH__|$GCLOUD_INSTALLED_PATH|g" \
-  > run_mac.sh
-chmod +x run_mac.sh
-# Download and configure the LaunchDaemon XML
+  > "$INSTALL_DIR/scripts/run_mac.sh"
+chmod +x "$INSTALL_DIR/scripts/run_mac.sh"
+log "INFO" "run_mac.sh written to $INSTALL_DIR/scripts/run_mac.sh"
+log "INFO" "  GCLOUD_PATH injected as: $GCLOUD_INSTALLED_PATH"
+
+# ==========================================
+# 10. LAUNCHDAEMON (background scheduler)
+# ==========================================
 cd "$INSTALL_DIR"
-curl -sL "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/mac_schedule.plist" \
+curl -fsSL "https://raw.githubusercontent.com/ArnavJain18/Speedtest-Bottleneck-Project/main/mac_schedule.plist" \
   | sed "s|__INSTALL_DIR__|$INSTALL_DIR|g" \
   > com.speedtest.diagnostics.plist
 
-echo "========================= Activating Background Service ========================="
-echo "You may be prompted for your password to install the background service."
+log "INFO" "========================= Activating Background Service ========================="
+log "INFO" "You may be prompted for your password to install the background service."
+
 sudo mv com.speedtest.diagnostics.plist /Library/LaunchDaemons/
 sudo chown root:wheel /Library/LaunchDaemons/com.speedtest.diagnostics.plist
 sudo chmod 644 /Library/LaunchDaemons/com.speedtest.diagnostics.plist
 
-# Unload first just in case this is a re-installation
 sudo launchctl unload /Library/LaunchDaemons/com.speedtest.diagnostics.plist 2>/dev/null || true
-# Load and start the background timer
 sudo launchctl load -w /Library/LaunchDaemons/com.speedtest.diagnostics.plist
 
-echo "========================= Yayyy, All installation finished !! ========================="
-echo "Data collection will now run silently in the background every hour."
+log "INFO" "============================================================"
+log "INFO" "  Installation Complete!"
+log "INFO" "  Data collection runs silently in the background every hour."
+log "INFO" "  Full install log saved to: $LOG_FILE"
+log "INFO" "============================================================"
