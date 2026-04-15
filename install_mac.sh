@@ -146,11 +146,16 @@ fi
 # on every individual 'brew install' call (the default behaviour that causes
 # multi-minute delays on slow networks).
 #
-# Pinned versions (last updated: April 2026):
-#   libpcap    1.10.6  — packet capture library
-#   python@3.13        — latest stable CPython release
-#   gnupg@2.4  2.4.x   — last production-stable GnuPG branch (2.5 is dev)
-#   go@1.24    1.24.x  — previous stable Go (1.24 is the last LTS-style branch)
+# Pinned versions (confirmed on formulae.brew.sh, April 2026):
+#   libpcap    1.10.6   — unversioned formula, always resolves to stable
+#   python@3.13         — keg-only; we manually add its bin to PATH below
+#   gnupg      2.4.x    — 'gnupg@2.4' is just an alias; use plain 'gnupg'
+#   go@1.24    1.24.x   — keg-only versioned formula; we add its bin to PATH
+#
+# NOTE on keg-only formulae (python@3.13, go@1.24):
+#   Homebrew intentionally does NOT symlink versioned formula binaries into
+#   /opt/homebrew/bin, so 'python3' and 'go' would be missing from PATH after
+#   install. We fix this by prepending the opt/bin paths explicitly below.
 # ==========================================
 log "INFO" "========================= Checking / Installing Dependencies ========================="
 
@@ -158,13 +163,41 @@ log "INFO" "========================= Checking / Installing Dependencies =======
 export HOMEBREW_NO_AUTO_UPDATE=1
 
 # libpcap 1.10.6 — packet capture (required by bottleneck-finder)
-brew_install_if_missing "libpcap"      "pcap-config"
+brew_install_if_missing "libpcap"     "pcap-config"
 # python@3.13 — pinned minor version so venv stays stable across re-runs
-brew_install_if_missing "python@3.13"  "python3"
-# gnupg@2.4 — production-stable branch; used to decrypt the GCP key
-brew_install_if_missing "gnupg@2.4"    "gpg"
-# go@1.24 — pinned minor version; used to build bottleneck-finder and ndt7-client
-brew_install_if_missing "go@1.24"      "go"
+brew_install_if_missing "python@3.13" "python3"
+# gnupg — 'gnupg@2.4' is an alias; plain 'gnupg' is the correct formula name
+brew_install_if_missing "gnupg"       "gpg"
+# go@1.24 — pinned minor; confirmed real formula on formulae.brew.sh
+brew_install_if_missing "go@1.24"     "go"
+
+# ---- Fix PATH for keg-only versioned formulae ----
+# python@3.13 and go@1.24 are keg-only: brew does not link them into the
+# global bin, so we must prepend their opt paths manually for this session
+# AND make them permanent in the user's shell profile.
+BREW_PREFIX="$(brew --prefix)"
+
+KEG_PATHS=(
+    "$BREW_PREFIX/opt/python@3.13/bin"
+    "$BREW_PREFIX/opt/go@1.24/bin"
+)
+
+for keg_bin in "${KEG_PATHS[@]}"; do
+    # Add to current session
+    export PATH="$keg_bin:$PATH"
+
+    # Add permanently to shell profile (idempotent)
+    USER_SHELL=$(basename "$SHELL")
+    PROFILE_FILE="$HOME/.zprofile"
+    [[ "$USER_SHELL" != "zsh" ]] && PROFILE_FILE="$HOME/.bash_profile"
+
+    if ! grep -qF "$keg_bin" "$PROFILE_FILE" 2>/dev/null; then
+        echo "" >> "$PROFILE_FILE"
+        echo "# Speedtest agent — keg-only Homebrew path" >> "$PROFILE_FILE"
+        echo "export PATH=\"$keg_bin:\$PATH\"" >> "$PROFILE_FILE"
+        log "INFO" "Added $keg_bin to $PROFILE_FILE"
+    fi
+done
 
 # ==========================================
 # 3. OOKLA SPEEDTEST CLI
