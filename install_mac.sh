@@ -57,16 +57,34 @@ cd "$INSTALL_DIR"
 
 # ==========================================
 # HELPER: brew_install_if_missing
-# Skips 'brew install' (and any Xcode checks) if the formula is already installed.
+# Skips 'brew install' if the package (or its provided command) is already present.
+# Usage: brew_install_if_missing <formula> [command_to_check]
+#
+# Why the extra command check?
+#   'brew list --formula python3' always returns "not found" because the real
+#   formula name is 'python@3.x', not 'python3'. Same trap exists for other
+#   aliased packages. So we also check if the binary is already on PATH.
 # ==========================================
 brew_install_if_missing() {
     local pkg="$1"
+    local cmd="${2:-$1}"   # command to probe; defaults to the formula name
+
+    # 1. Check if brew already tracks it under the given name
     if brew list --formula "$pkg" &>/dev/null; then
         log "INFO" "[$pkg] Already installed via Homebrew — skipping."
-    else
-        log "INFO" "[$pkg] Installing via Homebrew..."
-        HOMEBREW_NO_AUTO_UPDATE=1 brew install "$pkg"
+        return
     fi
+
+    # 2. For aliased packages (e.g. 'python3' → 'python@3.x'), check if the
+    #    command is already on PATH instead of relying on the formula name.
+    if command -v "$cmd" &>/dev/null; then
+        log "INFO" "[$pkg] '$cmd' already on PATH ($(command -v "$cmd")) — skipping."
+        return
+    fi
+
+    # 3. Neither check passed — install it.
+    log "INFO" "[$pkg] Installing via Homebrew..."
+    HOMEBREW_NO_AUTO_UPDATE=1 brew install "$pkg"
 }
 
 brew_cask_install_if_missing() {
@@ -123,38 +141,30 @@ fi
 
 # ==========================================
 # 2. DEPENDENCIES
-# Run 'brew update' only once, only if it hasn't been run recently (within 24h).
-# Install each package only if it is not already present.
-# HOMEBREW_NO_AUTO_UPDATE=1 prevents brew from silently re-running update on
-# every individual 'brew install' call (which is the default behaviour that
-# causes multi-minute delays).
+# Pinned to specific stable versions for reproducibility.
+# HOMEBREW_NO_AUTO_UPDATE=1 prevents brew from silently running 'brew update'
+# on every individual 'brew install' call (the default behaviour that causes
+# multi-minute delays on slow networks).
+#
+# Pinned versions (last updated: April 2026):
+#   libpcap    1.10.6  — packet capture library
+#   python@3.13        — latest stable CPython release
+#   gnupg@2.4  2.4.x   — last production-stable GnuPG branch (2.5 is dev)
+#   go@1.24    1.24.x  — previous stable Go (1.24 is the last LTS-style branch)
 # ==========================================
 log "INFO" "========================= Checking / Installing Dependencies ========================="
 
-BREW_UPDATED_FLAG="/tmp/.speedtest_brew_updated_today"
-TODAY=$(date +%Y%m%d)
-
-if [[ ! -f "$BREW_UPDATED_FLAG" ]] || [[ "$(cat "$BREW_UPDATED_FLAG" 2>/dev/null)" != "$TODAY" ]]; then
-    log "INFO" "Running 'brew update' (once per day)..."
-    brew update
-    echo "$TODAY" > "$BREW_UPDATED_FLAG"
-else
-    log "INFO" "'brew update' already ran today — skipping."
-fi
-
-# Export so every brew call in this session skips auto-update
+# Suppress brew's built-in auto-update for every install call
 export HOMEBREW_NO_AUTO_UPDATE=1
 
-for pkg in make libpcap python3 gnupg; do
-    brew_install_if_missing "$pkg"
-done
-
-# wireshark: needed for tshark/dumpcap — install headless (no GUI, no Xcode Qt build)
-# The 'wireshark' formula on Homebrew is the CLI-only build; the GUI lives in the cask.
-brew_install_if_missing "wireshark"
-
-# go: required to compile speedtest_diagnostics and ndt7-client
-brew_install_if_missing "go"
+# libpcap 1.10.6 — packet capture (required by bottleneck-finder)
+brew_install_if_missing "libpcap"      "pcap-config"
+# python@3.13 — pinned minor version so venv stays stable across re-runs
+brew_install_if_missing "python@3.13"  "python3"
+# gnupg@2.4 — production-stable branch; used to decrypt the GCP key
+brew_install_if_missing "gnupg@2.4"    "gpg"
+# go@1.24 — pinned minor version; used to build bottleneck-finder and ndt7-client
+brew_install_if_missing "go@1.24"      "go"
 
 # ==========================================
 # 3. OOKLA SPEEDTEST CLI
